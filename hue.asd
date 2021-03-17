@@ -4,7 +4,7 @@
   :license ""
   :depends-on (:jonathan
                :dexador
-               :cl-ppcre
+               :alexandria
                :uiop)
   :components ((:module "src"
                 :components
