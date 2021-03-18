@@ -1,6 +1,15 @@
 (defpackage hue
   (:import-from :jonathan :parse :to-json)
-  (:use :cl))
+  (:use :cl)
+  (:export bridge-list
+           load-bridge
+           initialize-bridge
+           set-state
+           identify
+           api-request
+           groups
+           lights))
+
 (in-package :hue)
 
 (defclass bridge ()
@@ -25,32 +34,32 @@
     :initarg :lights)))
 
 (defclass group ()
-  ((number
-    :accessor number
-    :initarg :number)
+  ((group-number
+    :accessor group-number
+    :initarg :group-number)
    (name
     :accessor name
     :initarg :name)
    (action
     :accessor action
     :initarg :action)
-   (class
-    :accessor class
-    :initarg :class)
+   (group-class
+    :accessor group-class
+    :initarg :group-class)
    (state
     :accessor state
     :initarg :state)
-   (type
-    :accessor type
-    :initarg :type)
+   (group-type
+    :accessor group-type
+    :initarg :group-type)
    (lights
     :accessor lights
     :initarg :lights)))
 
 (defclass light ()
-  ((number
-    :accessor number
-    :initarg :number)
+  ((light-number
+    :accessor light-number
+    :initarg :light-number)
    (state
     :accessor state
     :initarg :state)
@@ -124,28 +133,38 @@
   (flet ((cdr-assoc (key)
            (cdr (assoc key (cdr group-alist) :test #'equal))))
     (make-instance 'group
-                   :number (car group-alist)
+                   :group-number (car group-alist)
                    :name (cdr-assoc "name")
                    :action (cdr-assoc "action")
-                   :class (cdr-assoc "class")
+                   :group-class (cdr-assoc "class")
                    :state (cdr-assoc "state")
-                   :type (cdr-assoc "type")
+                   :group-type (cdr-assoc "type")
                    :lights (cdr-assoc "lights"))))
 
 (defun alist-to-light (light-alist)
   (flet ((cdr-assoc (key)
            (cdr (assoc key (cdr light-alist) :test #'equal))))
     (make-instance 'light
-                   :number (car light-alist)
+                   :light-number (car light-alist)
                    :state (cdr-assoc "state")
                    :name (cdr-assoc "name"))))
 
 (defmethod set-state ((bridge bridge) (group group) alist)
-  (api-request bridge (format nil "groups/~a/action" (number group))
+  (api-request bridge (format nil "groups/~a/action" (group-number group))
                :method :put
                :content (to-json alist :from :alist)))
 
 (defmethod set-state ((bridge bridge) (light light) alist)
-  (api-request bridge (format nil "lights/~a/state" (number light))
+  (api-request bridge (format nil "lights/~a/state" (light-number light))
                :method :put
                :content (to-json alist :from :alist)))
+
+(defmethod identify ((bridge bridge) (light light) &key (seconds 5))
+  (bt:make-thread
+   (lambda ()
+     (set-state bridge light '(("on" . t)))
+     (dotimes (i seconds)
+       (sleep 1.5)
+       (set-state bridge light '(("bri" . 1)))
+       (sleep 1.5)
+       (set-state bridge light '(("bri" . 255)))))))
