@@ -5,9 +5,15 @@
   :depends-on (:jonathan
                :dexador
                :alexandria
+<<<<<<< HEAD
                :bordeaux-threads
+=======
+               :clx
+>>>>>>> 45eca24 (Adds three new files, colors, xlib, and screen)
                :uiop)
   :components ((:module "src"
                 :components
-                ((:file "main"))))
+                ((:file "main")
+                 (:file "colors")
+                 (:file "xlib"))))
   :description "")
